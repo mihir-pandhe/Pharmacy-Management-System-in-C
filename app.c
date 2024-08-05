@@ -1,14 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MEDICINE_FILE "medicines.dat"
-#define PRESCRIPTION_FILE "prescriptions.dat"
+
+typedef struct {
+    char name[100];
+    float price;
+    int quantity;
+} Medicine;
 
 void displayMenu();
 void addMedicine();
 void listMedicines();
-void addPrescription();
-void listPrescriptions();
 
 int main() {
     int choice;
@@ -27,19 +31,13 @@ int main() {
                 listMedicines();
                 break;
             case 3:
-                addPrescription();
-                break;
-            case 4:
-                listPrescriptions();
-                break;
-            case 5:
                 printf("Exiting...\n");
                 break;
             default:
                 printf("Invalid choice. Please try again.\n");
                 break;
         }
-    } while (choice != 5);
+    } while (choice != 3);
 
     return 0;
 }
@@ -48,9 +46,7 @@ void displayMenu() {
     printf("\n--- Pharmacy Management System ---\n");
     printf("1. Add Medicine\n");
     printf("2. List Medicines\n");
-    printf("3. Add Prescription\n");
-    printf("4. List Prescriptions\n");
-    printf("5. Exit\n");
+    printf("3. Exit\n");
 }
 
 void addMedicine() {
@@ -60,16 +56,21 @@ void addMedicine() {
         return;
     }
 
-    char name[100];
-    float price;
-    
+    Medicine med;
+
     printf("Enter medicine name: ");
-    fgets(name, sizeof(name), stdin);
+    fgets(med.name, sizeof(med.name), stdin);
+    med.name[strcspn(med.name, "\n")] = '\0';
+
     printf("Enter medicine price: ");
-    scanf("%f", &price);
+    scanf("%f", &med.price);
     getchar();
 
-    fprintf(file, "%s%.2f\n", name, price);
+    printf("Enter medicine quantity: ");
+    scanf("%d", &med.quantity);
+    getchar();
+
+    fprintf(file, "%s %.2f %d\n", med.name, med.price, med.quantity);
     fclose(file);
     printf("Medicine added successfully.\n");
 }
@@ -81,49 +82,11 @@ void listMedicines() {
         return;
     }
 
-    char name[100];
-    float price;
+    Medicine med;
 
     printf("\n--- List of Medicines ---\n");
-    while (fscanf(file, "%[^\n] %f\n", name, &price) != EOF) {
-        printf("Name: %s Price: %.2f\n", name, price);
-    }
-    fclose(file);
-}
-
-void addPrescription() {
-    FILE *file = fopen(PRESCRIPTION_FILE, "a");
-    if (file == NULL) {
-        perror("Error opening prescription file");
-        return;
-    }
-
-    char patientName[100];
-    char medicineName[100];
-
-    printf("Enter patient name: ");
-    fgets(patientName, sizeof(patientName), stdin);
-    printf("Enter prescribed medicine name: ");
-    fgets(medicineName, sizeof(medicineName), stdin);
-
-    fprintf(file, "%s%s\n", patientName, medicineName);
-    fclose(file);
-    printf("Prescription added successfully.\n");
-}
-
-void listPrescriptions() {
-    FILE *file = fopen(PRESCRIPTION_FILE, "r");
-    if (file == NULL) {
-        perror("Error opening prescription file");
-        return;
-    }
-
-    char patientName[100];
-    char medicineName[100];
-
-    printf("\n--- List of Prescriptions ---\n");
-    while (fscanf(file, "%[^\n] %[^\n]\n", patientName, medicineName) != EOF) {
-        printf("Patient: %s Medicine: %s\n", patientName, medicineName);
+    while (fscanf(file, "%[^\n] %f %d\n", med.name, &med.price, &med.quantity) != EOF) {
+        printf("Name: %s\nPrice: %.2f\nQuantity: %d\n\n", med.name, med.price, med.quantity);
     }
     fclose(file);
 }
