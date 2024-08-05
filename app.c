@@ -4,6 +4,7 @@
 
 #define MEDICINE_FILE "medicines.dat"
 #define PRESCRIPTION_FILE "prescriptions.dat"
+#define SALES_FILE "sales.dat"
 
 typedef struct {
     char name[100];
@@ -17,12 +18,20 @@ typedef struct {
     int quantity;
 } Prescription;
 
+typedef struct {
+    char medicineName[100];
+    int quantity;
+    float totalCost;
+} Sale;
+
 void displayMenu();
 void addMedicine();
 void listMedicines();
 void addPrescription();
 void listPrescriptions();
 void updatePrescription();
+void processSale();
+void listSales();
 
 int main() {
     int choice;
@@ -50,13 +59,19 @@ int main() {
                 updatePrescription();
                 break;
             case 6:
+                processSale();
+                break;
+            case 7:
+                listSales();
+                break;
+            case 8:
                 printf("Exiting...\n");
                 break;
             default:
                 printf("Invalid choice. Please try again.\n");
                 break;
         }
-    } while (choice != 6);
+    } while (choice != 8);
 
     return 0;
 }
@@ -68,7 +83,9 @@ void displayMenu() {
     printf("3. Add Prescription\n");
     printf("4. List Prescriptions\n");
     printf("5. Update Prescription\n");
-    printf("6. Exit\n");
+    printf("6. Process Sale\n");
+    printf("7. List Sales\n");
+    printf("8. Exit\n");
 }
 
 void addMedicine() {
@@ -193,5 +210,66 @@ void updatePrescription() {
         printf("Prescription not found.\n");
     }
 
+    fclose(file);
+}
+
+void processSale() {
+    FILE *medFile = fopen(MEDICINE_FILE, "r+");
+    FILE *saleFile = fopen(SALES_FILE, "a");
+    if (medFile == NULL || saleFile == NULL) {
+        perror("Error opening files");
+        return;
+    }
+
+    Medicine med;
+    Sale sale;
+    char medName[100];
+    int quantity;
+
+    printf("Enter medicine name for sale: ");
+    fgets(medName, sizeof(medName), stdin);
+    medName[strcspn(medName, "\n")] = '\0';
+
+    printf("Enter quantity to sell: ");
+    scanf("%d", &quantity);
+    getchar();
+
+    rewind(medFile);
+    while (fscanf(medFile, "%[^\n] %f %d\n", med.name, &med.price, &med.quantity) != EOF) {
+        if (strcmp(med.name, medName) == 0) {
+            if (med.quantity >= quantity) {
+                med.quantity -= quantity;
+                sale.quantity = quantity;
+                sale.totalCost = quantity * med.price;
+                strcpy(sale.medicineName, medName);
+
+                fprintf(saleFile, "%s %d %.2f\n", sale.medicineName, sale.quantity, sale.totalCost);
+                fseek(medFile, -((long)strlen(med.name) + sizeof(float) + sizeof(int) + 3), SEEK_CUR);
+                fprintf(medFile, "%s %.2f %d\n", med.name, med.price, med.quantity);
+                printf("Sale processed successfully.\n");
+            } else {
+                printf("Insufficient quantity in inventory.\n");
+            }
+            break;
+        }
+    }
+
+    fclose(medFile);
+    fclose(saleFile);
+}
+
+void listSales() {
+    FILE *file = fopen(SALES_FILE, "r");
+    if (file == NULL) {
+        perror("Error opening sales file");
+        return;
+    }
+
+    Sale sale;
+
+    printf("\n--- List of Sales ---\n");
+    while (fscanf(file, "%[^\n] %d %f\n", sale.medicineName, &sale.quantity, &sale.totalCost) != EOF) {
+        printf("Medicine: %s\nQuantity: %d\nTotal Cost: %.2f\n\n", sale.medicineName, sale.quantity, sale.totalCost);
+    }
     fclose(file);
 }
